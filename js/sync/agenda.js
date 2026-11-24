@@ -6,6 +6,8 @@
 // As telas não conhecem este módulo. Ele reage ao onChange() do store (via app.js).
 
 import { getConfig, setConfig, atualizarFestaSync } from '../store.js';
+import { total, recebido, aReceber, status, STATUS_TEXTO } from '../core/calc.js';
+import { brl } from '../core/util.js';
 
 // --- Constantes ---
 const ESCOPO     = 'https://www.googleapis.com/auth/calendar.app.created';
@@ -181,11 +183,22 @@ function extrairHorario(dataISO, horarioStr) {
 /** Monta o objeto de evento para a API do Google Calendar. */
 function montarEvento(festa, calendarId) {
   const horario = extrairHorario(festa.data, festa.horario);
-  const nomes = (festa.itens ?? []).map(i => i.nome).filter(Boolean).join(', ');
+  const itensTexto = (festa.itens ?? [])
+    .filter(i => i.nome || Number(i.valor))
+    .map(i => Number(i.valor) ? `${i.nome || 'Item'} (${brl(i.valor)})` : i.nome)
+    .join(', ');
+  const t = total(festa);
+  const r = recebido(festa);
+  const falta = aReceber(festa);
+  const sit = STATUS_TEXTO[status(festa)];
+
   const descricao = [
     `Cliente: ${festa.cliente || '-'}`,
     !horario && festa.horario ? `Horário: ${festa.horario}` : null,
-    nomes ? `Pacote: ${nomes}` : null,
+    itensTexto ? `Pacote: ${itensTexto}` : null,
+    `Total: ${brl(t)}`,
+    `Recebido: ${brl(r)}`,
+    `Falta receber: ${brl(falta)} (${sit})`,
     festa.obs ? `Obs: ${festa.obs}` : null,
   ].filter(Boolean).join('\n');
 

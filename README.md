@@ -14,7 +14,7 @@ Aplicativo web pessoal (PWA) para organizar **agenda e financeiro de serviços d
   - 🟡 **Amarelo:** parte recebida, ainda falta receber de alguma festa do mês.
   - 🔴 **Vermelho:** nada recebido no mês ainda.
 - **Sincronização entre aparelhos (opcional):** salva suas festas e pacotes em um repositório **privado** separado no GitHub, com mesclagem automática por última edição.
-- **Integração com Google Agenda (opcional):** cria uma agenda própria chamada **"Festas"** (sem misturar com sua agenda pessoal), cria/atualiza/remove eventos automaticamente ao salvar ou excluir festas — sem incluir valores financeiros — e adiciona lembrete de **1 dia antes**.
+- **Integração com Google Agenda (opcional):** cria uma agenda própria chamada **"Festas"** (sem misturar com sua agenda pessoal), cria/atualiza/remove eventos automaticamente ao salvar ou excluir festas — com pacote, valores (total, recebido e a receber) e lembrete de **1 dia antes**.
 - **Tema claro e escuro automático** conforme o sistema.
 
 ---
