@@ -2,6 +2,7 @@ import { getAll } from '../store.js';
 import { total, aReceber, status, STATUS_TEXTO } from '../core/calc.js';
 import { brl, esc, hoje, fmtData } from '../core/util.js';
 import { estadoSync } from '../sync/github.js';
+import { estadoAgenda } from '../sync/agenda.js';
 
 let aba = 'proximas';
 
@@ -39,26 +40,38 @@ export function renderHome(el) {
   el.querySelectorAll('[data-aba]').forEach(b => b.onclick = () => { aba = b.dataset.aba; renderHome(el); });
 }
 
-/** Badge discreto de status de sincronização. */
+/** Badges discretos de status (GitHub sync + Google Agenda). */
 function badgeSync() {
-  const { status, mensagem } = estadoSync;
-  const estilos = {
-    ok:            'background:rgba(255,255,255,.18);color:#fff',
-    sincronizando: 'background:rgba(255,255,255,.18);color:#fff',
-    pendente:      'background:rgba(255,200,61,.25);color:#fff',
-    erro:          'background:rgba(194,58,58,.35);color:#fff',
-    ocioso:        '',
-  };
-  if (status === 'ocioso') return '';
-  const textos = {
-    ok:            '✓ Sincronizado',
-    sincronizando: '↻ Sincronizando…',
-    pendente:      '⏳ Pendente',
-    erro:          '✗ Erro de sync — toque em Config',
-  };
-  const estilo = estilos[status] ?? '';
-  const texto  = textos[status] ?? mensagem;
-  return `<div style="margin-top:8px;padding:4px 10px;border-radius:999px;font-size:.78rem;display:inline-block;${estilo}">${texto}</div>`;
+  const badges = [];
+
+  // Badge GitHub
+  const gs = estadoSync.status;
+  if (gs !== 'ocioso') {
+    const cores = {
+      ok: 'rgba(255,255,255,.18)', sincronizando: 'rgba(255,255,255,.18)',
+      pendente: 'rgba(255,200,61,.25)', erro: 'rgba(194,58,58,.35)',
+    };
+    const textos = {
+      ok: '⇅ Sync', sincronizando: '↻ Sync…', pendente: '⏳ Sync', erro: '✗ Sync — Config',
+    };
+    badges.push(`<div style="padding:4px 10px;border-radius:999px;font-size:.78rem;background:${cores[gs] ?? 'transparent'};color:#fff">${textos[gs] ?? gs}</div>`);
+  }
+
+  // Badge Google Agenda
+  const ag = estadoAgenda.status;
+  if (ag !== 'ocioso') {
+    const cores = {
+      ok: 'rgba(255,255,255,.18)', sincronizando: 'rgba(255,255,255,.18)',
+      erro: 'rgba(194,58,58,.35)',
+    };
+    const textos = {
+      ok: '📅 Agenda', sincronizando: '📅 Agenda…', erro: '✗ Agenda — Config',
+    };
+    badges.push(`<div style="padding:4px 10px;border-radius:999px;font-size:.78rem;background:${cores[ag] ?? 'transparent'};color:#fff">${textos[ag] ?? ag}</div>`);
+  }
+
+  if (!badges.length) return '';
+  return `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${badges.join('')}</div>`;
 }
 
 function card(p) {
