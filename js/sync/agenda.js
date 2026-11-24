@@ -42,12 +42,10 @@ function tokenValido() {
 
 /**
  * Pede (ou renova) o access_token via Google Identity Services.
- * Retorna o token ou lança erro se o usuário cancelar.
+ * Se silent ('') falhar por precisar de interação, tenta com prompt de consentimento.
  */
-function obterToken() {
+function pedirToken(prompt) {
   return new Promise((resolve, reject) => {
-    if (tokenValido()) { resolve(_accessToken); return; }
-
     const id = clientId();
     if (!id) { reject(new Error('Client ID do Google não configurado.')); return; }
 
@@ -62,12 +60,29 @@ function obterToken() {
       callback: (resp) => {
         if (resp.error) { reject(new Error(resp.error_description ?? resp.error)); return; }
         _accessToken = resp.access_token;
-        _tokenExpira = Date.now() + resp.expires_in * 1000;
+        _tokenExpira = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
         resolve(_accessToken);
       },
+      error_callback: (err) => {
+        reject(new Error(`Google login (${err?.type ?? 'erro'}): ${err?.message ?? 'janela fechada ou bloqueada'}`));
+      },
     });
-    cliente.requestAccessToken({ prompt: '' }); // '' = sem prompt se já tiver consentimento
+    cliente.requestAccessToken({ prompt });
   });
+}
+
+async function obterToken(forcarInteracao = false) {
+  if (!forcarInteracao && tokenValido()) return _accessToken;
+  try {
+    return await pedirToken(forcarInteracao ? 'select_account' : '');
+  } catch (err) {
+    const m = String(err?.message ?? '').toLowerCase();
+    // Se falhou porque precisa de consentimento/login e ainda não tentamos interativo
+    if (!forcarInteracao && (m.includes('interaction') || m.includes('consent') || m.includes('login_required'))) {
+      return await pedirToken('consent');
+    }
+    throw err;
+  }
 }
 
 function headers() {
@@ -143,6 +158,12 @@ async function garantirAgenda() {
 
 // --- Horário ---
 
+/** Soma 1 dia a uma data YYYY-MM-DD (end.date no Google Agenda é exclusivo). */
+function diaSeguinte(dataISO) {
+  const [a, m, d] = dataISO.split('-').map(Number);
+  return new Date(Date.UTC(a, m - 1, d + 1)).toISOString().slice(0, 10);
+}
+
 /** Extrai início e fim de strings como "14:00 às 17:00" ou "14h às 17h". */
 function extrairHorario(dataISO, horarioStr) {
   if (!horarioStr) return null;
@@ -150,9 +171,10 @@ function extrairHorario(dataISO, horarioStr) {
   if (!m) return null;
   const hI = m[1].padStart(2, '0'), mI = (m[2] || '00').padStart(2, '0');
   const hF = m[3].padStart(2, '0'), mF = (m[4] || '00').padStart(2, '0');
+  const dataFim = `${hF}:${mF}` <= `${hI}:${mI}` ? diaSeguinte(dataISO) : dataISO;
   return {
     start: { dateTime: `${dataISO}T${hI}:${mI}:00`, timeZone: FUSO },
-    end:   { dateTime: `${dataISO}T${hF}:${mF}:00`, timeZone: FUSO },
+    end:   { dateTime: `${dataFim}T${hF}:${mF}:00`, timeZone: FUSO },
   };
 }
 
@@ -162,6 +184,7 @@ function montarEvento(festa, calendarId) {
   const nomes = (festa.itens ?? []).map(i => i.nome).filter(Boolean).join(', ');
   const descricao = [
     `Cliente: ${festa.cliente || '-'}`,
+    !horario && festa.horario ? `Horário: ${festa.horario}` : null,
     nomes ? `Pacote: ${nomes}` : null,
     festa.obs ? `Obs: ${festa.obs}` : null,
   ].filter(Boolean).join('\n');
@@ -171,9 +194,9 @@ function montarEvento(festa, calendarId) {
     location: festa.endereco || undefined,
     description: descricao,
     ...(horario ?? {
-      // Sem horário reconhecível → evento de dia inteiro
+      // Sem horário reconhecível → evento de dia inteiro (end.date exclusivo)
       start: { date: festa.data },
-      end:   { date: festa.data },
+      end:   { date: diaSeguinte(festa.data) },
     }),
     reminders: {
       useDefault: false,
@@ -203,8 +226,9 @@ export async function sincronizarFesta(festa) {
       await api('PUT', `/calendars/${encodeURIComponent(calendarId)}/events/${festa.googleEventId}`, evento);
       return festa.googleEventId;
     } catch (err) {
-      // Evento foi apagado manualmente no Google → cria de novo
-      if (!String(err.message).includes('404')) throw err;
+      // Evento ou agenda antiga foram apagados no Google → recria abaixo
+      const msg = String(err.message);
+      if (!msg.includes('404') && !msg.includes('410')) throw err;
     }
   }
 
@@ -213,12 +237,21 @@ export async function sincronizarFesta(festa) {
     const criado = await api('POST', `/calendars/${encodeURIComponent(calendarId)}/events`, evento);
     return criado.id;
   } catch (err) {
-    if (!String(err.message).includes('404')) throw err;
+    const msg = String(err.message);
+    if (!msg.includes('404') && !msg.includes('410') && !msg.includes('403')) throw err;
     setConfig({ calendarId: null });
     const novoCalendarId = await garantirAgenda();
     const criado = await api('POST', `/calendars/${encodeURIComponent(novoCalendarId)}/events`, evento);
     return criado.id;
   }
+}
+
+/** Conecta explicitamente ao Google (chamado pelo botão em Configurações). */
+export async function conectarGoogle() {
+  await obterToken(true);
+  const id = await garantirAgenda();
+  emitirEstado('ok', '✓ Google Agenda conectado.');
+  return id;
 }
 
 /** Remove o evento de uma festa excluída. */

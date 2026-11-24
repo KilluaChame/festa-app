@@ -3,7 +3,7 @@
 // Nunca grava segredos em arquivo ou URL.
 import { getConfig, setConfig } from '../store.js';
 import { sincronizar } from '../sync/github.js';
-import { reagirMudanca } from '../sync/agenda.js';
+import { conectarGoogle, estadoAgenda } from '../sync/agenda.js';
 
 export function renderConfig(el) {
   const cfg = getConfig();
@@ -118,6 +118,10 @@ export function renderConfig(el) {
   $repo.value     = cfg.githubRepo    ?? 'festas-dados';
   $clientId.value = cfg.googleClientId ?? '';
 
+  if (estadoAgenda.status === 'erro' && estadoAgenda.mensagem) {
+    mostrarStatus($googleStatus, 'erro', estadoAgenda.mensagem);
+  }
+
   // ── Salvar GitHub ──
   el.querySelector('#cfgSalvar').onclick = () => {
     const dono  = $dono.value.trim();
@@ -144,7 +148,7 @@ export function renderConfig(el) {
   };
 
   // ── Salvar Google ──
-  el.querySelector('#cfgSalvarGoogle').onclick = () => {
+  el.querySelector('#cfgSalvarGoogle').onclick = async () => {
     const id = $clientId.value.trim();
     if (!id) { $googleErro.textContent = 'Informe o Client ID.'; return; }
     if (!id.includes('.apps.googleusercontent.com')) {
@@ -153,7 +157,13 @@ export function renderConfig(el) {
     }
     $googleErro.textContent = '';
     setConfig({ googleClientId: id });
-    mostrarStatus($googleStatus, 'ok', '✓ Client ID salvo. Ele será usado ao salvar a próxima festa.');
+    mostrarStatus($googleStatus, 'info', 'Conectando ao Google Agenda...');
+    try {
+      await conectarGoogle();
+      mostrarStatus($googleStatus, 'ok', '✓ Conectado! A agenda "Festas" está pronta.');
+    } catch (err) {
+      mostrarStatus($googleStatus, 'erro', `✗ ${err.message}`);
+    }
   };
 }
 

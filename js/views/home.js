@@ -97,16 +97,19 @@ function badgeSync() {
   if (ag !== 'ocioso') {
     const cores = {
       ok: 'rgba(255,255,255,.18)', sincronizando: 'rgba(255,255,255,.18)',
-      erro: 'rgba(194,58,58,.35)',
+      erro: 'rgba(194,58,58,.45)',
     };
     const textos = {
-      ok: '📅 Agenda', sincronizando: '📅 Agenda…', erro: '✗ Agenda — Config',
+      ok: '📅 Agenda', sincronizando: '📅 Agenda…', erro: '✗ Agenda — tocar para corrigir',
     };
-    badges.push(`<div style="padding:4px 10px;border-radius:999px;font-size:.78rem;background:${cores[ag] ?? 'transparent'};color:#fff">${textos[ag] ?? ag}</div>`);
+    badges.push(`<a href="#/config" style="padding:4px 10px;border-radius:999px;font-size:.78rem;background:${cores[ag] ?? 'transparent'};color:#fff">${textos[ag] ?? ag}</a>`);
   }
 
   if (!badges.length) return '';
-  return `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${badges.join('')}</div>`;
+  const msgErro = ag === 'erro' && estadoAgenda.mensagem
+    ? `<div style="margin-top:6px;font-size:.78rem;color:#fff;opacity:.95">${esc(estadoAgenda.mensagem)}</div>`
+    : '';
+  return `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${badges.join('')}</div>${msgErro}`;
 }
 
 function card(p) {
