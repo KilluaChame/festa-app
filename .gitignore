@@ -6,6 +6,7 @@ dados.json
 naoenvia.json
 .env
 .env.*
+.gitignore*
 *token*
 *secret*
 *.key
