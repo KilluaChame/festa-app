@@ -1,0 +1,4 @@
+Pasta reservada para os módulos de sincronização (próximas etapas):
+  github.js  -> envia/baixa os dados do repositório privado
+  agenda.js  -> cria/atualiza o evento no Google Agenda
+Eles usam onChange() de js/store.js, sem alterar as telas.
