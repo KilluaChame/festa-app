@@ -75,3 +75,14 @@ export function substituirDados(novosDados) {
   dados = novosDados;
   salvar(dados);
 }
+
+/**
+ * Atualiza apenas campos de sincronização (ex.: googleEventId) em uma festa
+ * sem disparar onChange e sem sobrescrever config ou outras festas.
+ */
+export function atualizarFestaSync(id, campos) {
+  const i = dados.festas.findIndex(p => p.id === id);
+  if (i < 0) return;
+  dados.festas[i] = { ...dados.festas[i], ...campos };
+  salvar(dados);
+}

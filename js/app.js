@@ -25,7 +25,9 @@ rota();
 // 2. Atualiza Google Agenda (se configurado)
 onChange((evento, festa) => {
   agendarSync();
-  reagirMudanca(evento, festa).catch(() => {}); // falha não bloqueia nada
+  reagirMudanca(evento, festa)
+    .then(alterou => { if (alterou) agendarSync(); })
+    .catch(() => {}); // falha não bloqueia nada
 });
 
 // Ao abrir o app, sincroniza com GitHub em segundo plano

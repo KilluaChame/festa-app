@@ -5,7 +5,7 @@
 //
 // As telas não conhecem este módulo. Ele reage ao onChange() do store (via app.js).
 
-import { getDados, substituirDados, getConfig, setConfig } from '../store.js';
+import { getConfig, setConfig, atualizarFestaSync } from '../store.js';
 
 // --- Constantes ---
 const ESCOPO     = 'https://www.googleapis.com/auth/calendar.app.created';
@@ -93,25 +93,52 @@ async function api(method, path, body) {
 
 // --- Agenda "Festas" ---
 
+let _garantindoAgenda = null;
+
+/**
+ * Procura uma agenda existente chamada "Festas" na conta do usuário.
+ * Evita criar agendas duplicadas caso config.calendarId ainda não esteja salvo.
+ */
+async function buscarAgendaExistente() {
+  try {
+    const lista = await api('GET', '/users/me/calendarList?minAccessRole=owner');
+    const encontrada = (lista?.items ?? []).find(c => c.summary === NOME_AGENDA);
+    return encontrada?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Garante que a agenda "Festas" existe.
- * Se já existe (calendarId em config), apenas retorna o id.
- * Senão cria e grava o id em config.calendarId (que sincroniza via GitHub).
+ * 1. Se já existe em config.calendarId, retorna.
+ * 2. Senão, procura na lista de agendas do Google antes de criar uma nova.
+ * 3. Usa trava (_garantindoAgenda) para chamadas simultâneas não duplicarem.
  */
 async function garantirAgenda() {
   const cfg = getConfig();
   if (cfg.calendarId) return cfg.calendarId;
 
-  // Cria a agenda "Festas"
-  const agenda = await api('POST', '/calendars', {
-    summary: NOME_AGENDA,
-    timeZone: FUSO,
-  });
-  const id = agenda.id;
+  if (_garantindoAgenda) return _garantindoAgenda;
 
-  // Persiste o id nos dados (vai sincronizar para outros aparelhos via GitHub)
-  setConfig({ calendarId: id });
-  return id;
+  _garantindoAgenda = (async () => {
+    try {
+      let id = await buscarAgendaExistente();
+      if (!id) {
+        const agenda = await api('POST', '/calendars', {
+          summary: NOME_AGENDA,
+          timeZone: FUSO,
+        });
+        id = agenda.id;
+      }
+      setConfig({ calendarId: id });
+      return id;
+    } finally {
+      _garantindoAgenda = null;
+    }
+  })();
+
+  return _garantindoAgenda;
 }
 
 // --- Horário ---
@@ -175,9 +202,17 @@ export async function sincronizarFesta(festa) {
     }
   }
 
-  // Cria novo evento
-  const criado = await api('POST', `/calendars/${encodeURIComponent(calendarId)}/events`, evento);
-  return criado.id;
+  // Cria novo evento (se a agenda salva foi apagada no Google, recria/reencontra e tenta de novo)
+  try {
+    const criado = await api('POST', `/calendars/${encodeURIComponent(calendarId)}/events`, evento);
+    return criado.id;
+  } catch (err) {
+    if (!String(err.message).includes('404')) throw err;
+    setConfig({ calendarId: null });
+    const novoCalendarId = await garantirAgenda();
+    const criado = await api('POST', `/calendars/${encodeURIComponent(novoCalendarId)}/events`, evento);
+    return criado.id;
+  }
 }
 
 /** Remove o evento de uma festa excluída. */
@@ -195,29 +230,26 @@ export async function removerEvento(festa) {
 /**
  * Chamado pelo app.js via onChange().
  * Trata um evento de salvar ou excluir, atualizando a agenda e o googleEventId da festa.
+ * Retorna true se alterou dados locais (para o app.js reagendar o sync com GitHub).
  */
 export async function reagirMudanca(evento, festa) {
-  if (!clientId()) return; // Google não configurado — ignora silenciosamente
+  if (!clientId()) return false; // Google não configurado — ignora silenciosamente
   emitirEstado('sincronizando', 'Atualizando Google Agenda...');
   try {
-    const dados = getDados();
-    const idx = dados.festas.findIndex(p => p.id === festa.id);
-    if (idx < 0) return;
-
     if (evento === 'excluiu' || festa.excluida) {
       await removerEvento(festa);
-      // Limpa o id do evento nos dados
-      dados.festas[idx] = { ...dados.festas[idx], googleEventId: null };
+      atualizarFestaSync(festa.id, { googleEventId: null });
     } else {
       const eventId = await sincronizarFesta(festa);
-      dados.festas[idx] = { ...dados.festas[idx], googleEventId: eventId };
+      atualizarFestaSync(festa.id, { googleEventId: eventId });
     }
 
-    substituirDados(dados);
     emitirEstado('ok', '✓ Google Agenda atualizado.');
+    return true;
   } catch (err) {
     console.error('[agenda-sync]', err);
     emitirEstado('erro', msgAmigavel(err));
+    return false;
   }
 }
 
