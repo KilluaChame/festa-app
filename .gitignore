@@ -1,0 +1,25 @@
+# Documentação local
+DOCUMENTACAO.md
+
+# Dados e possíveis segredos (nunca devem ir para o repo público)
+dados.json
+.env
+.env.*
+*token*
+*secret*
+*.key
+*.pem
+
+# Sistema operacional e editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.log
+
+# Dependências (caso use Node localmente)
+node_modules/
