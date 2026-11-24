@@ -1,6 +1,7 @@
 import { getAll } from '../store.js';
 import { total, aReceber, status, STATUS_TEXTO } from '../core/calc.js';
 import { brl, esc, hoje, fmtData } from '../core/util.js';
+import { estadoSync } from '../sync/github.js';
 
 let aba = 'proximas';
 
@@ -8,18 +9,22 @@ export function renderHome(el) {
   const todas = getAll(), h = hoje();
   const chave = p => p.data + (p.horario || '');
   const proximas = todas.filter(p => p.data >= h).sort((a, b) => chave(a).localeCompare(chave(b)));
-  const passadas = todas.filter(p => p.data < h).sort((a, b) => chave(b).localeCompare(chave(a)));
+  const passadas = todas.filter(p => p.data <  h).sort((a, b) => chave(b).localeCompare(chave(a)));
   const lista = aba === 'proximas' ? proximas : passadas;
   const falta = todas.reduce((s, p) => s + aReceber(p), 0);
   const noMes = todas.filter(p => p.data.startsWith(h.slice(0, 7))).length;
 
   el.innerHTML = `
   <header class="topo">
-    <h1>Minhas Festas</h1>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h1>Minhas Festas</h1>
+      <a href="#/config" style="color:#fff;font-size:.85rem;opacity:.85" aria-label="Configurações">⚙ Config</a>
+    </div>
     <div class="resumo">
       <div class="destaque"><span>Total a receber</span><strong>${brl(falta)}</strong></div>
       <div><span>Festas no mês</span><strong>${noMes}</strong></div>
     </div>
+    ${badgeSync()}
   </header>
   <nav class="abas">
     <button data-aba="proximas" class="${aba === 'proximas' ? 'on' : ''}">Próximas (${proximas.length})</button>
@@ -32,6 +37,28 @@ export function renderHome(el) {
   <a class="fab" href="#/nova" aria-label="Nova festa">+</a>`;
 
   el.querySelectorAll('[data-aba]').forEach(b => b.onclick = () => { aba = b.dataset.aba; renderHome(el); });
+}
+
+/** Badge discreto de status de sincronização. */
+function badgeSync() {
+  const { status, mensagem } = estadoSync;
+  const estilos = {
+    ok:            'background:rgba(255,255,255,.18);color:#fff',
+    sincronizando: 'background:rgba(255,255,255,.18);color:#fff',
+    pendente:      'background:rgba(255,200,61,.25);color:#fff',
+    erro:          'background:rgba(194,58,58,.35);color:#fff',
+    ocioso:        '',
+  };
+  if (status === 'ocioso') return '';
+  const textos = {
+    ok:            '✓ Sincronizado',
+    sincronizando: '↻ Sincronizando…',
+    pendente:      '⏳ Pendente',
+    erro:          '✗ Erro de sync — toque em Config',
+  };
+  const estilo = estilos[status] ?? '';
+  const texto  = textos[status] ?? mensagem;
+  return `<div style="margin-top:8px;padding:4px 10px;border-radius:999px;font-size:.78rem;display:inline-block;${estilo}">${texto}</div>`;
 }
 
 function card(p) {
