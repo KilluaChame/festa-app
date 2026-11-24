@@ -3,6 +3,7 @@ DOCUMENTACAO.md
 
 # Dados e possíveis segredos (nunca devem ir para o repo público)
 dados.json
+naoenvia.json
 .env
 .env.*
 *token*

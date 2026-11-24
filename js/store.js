@@ -31,9 +31,11 @@ function confirmar(evento, festa) {
  * Sempre preenche atualizadoEm com o instante atual.
  */
 export function upsert(festa) {
+  // Preserva googleEventId existente — nunca apaga o vínculo com o evento do Google
+  const existente = dados.festas.find(p => p.id === festa.id);
   const festaCompleta = {
     excluida: false,
-    googleEventId: null,
+    googleEventId: existente?.googleEventId ?? null, // preserva vínculo existente
     ...festa,
     atualizadoEm: new Date().toISOString(),
   };
@@ -72,7 +74,14 @@ export const getDados = () => dados;
 
 /** Substitui os dados completos vindos do GitHub após mescla. */
 export function substituirDados(novosDados) {
+  // Preserva calendarId e googleClientId em memória se o dado novo não tiver —
+  // evita race condition entre agenda.js (que acabou de criar a agenda) e o
+  // sync do GitHub (que trouxe uma versão remota mais antiga sem o id).
+  const calendarId = dados.config?.calendarId ?? novosDados.config?.calendarId ?? null;
+  const googleClientId = dados.config?.googleClientId ?? novosDados.config?.googleClientId ?? null;
   dados = novosDados;
+  if (calendarId)     dados.config.calendarId     = calendarId;
+  if (googleClientId) dados.config.googleClientId = googleClientId;
   salvar(dados);
 }
 

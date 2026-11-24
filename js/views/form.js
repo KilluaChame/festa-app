@@ -2,24 +2,53 @@ import { getById, upsert, remove } from '../store.js';
 import { total, aReceber, status, STATUS_TEXTO } from '../core/calc.js';
 import { brl, esc, novoId } from '../core/util.js';
 
+/** Parseia "14:00 às 17:00" em { inicio: "14:00", fim: "17:00" } ou null. */
+function parseHorario(horario) {
+  if (!horario) return { inicio: '', fim: '' };
+  const m = horario.match(/(\d{1,2}[:h]\d{0,2})\s*(?:às|as|-|a)\s*(\d{1,2}[:h]\d{0,2})/i);
+  if (!m) return { inicio: horario, fim: '' };
+  // Normaliza para HH:MM
+  const norm = t => t.replace('h', ':').replace(/:$/, ':00').replace(/^(\d):/, '0$1:').replace(/:(\d)$/, ':0$1');
+  return { inicio: norm(m[1]), fim: norm(m[2]) };
+}
+
+/** Junta dois campos de hora em "HH:MM às HH:MM" (ou só um se fim vazio). */
+function juntarHorario(inicio, fim) {
+  if (!inicio && !fim) return '';
+  if (!fim) return inicio;
+  return `${inicio} às ${fim}`;
+}
+
 export function renderForm(el, id) {
   const existente = id && getById(id);
   const p = existente ? structuredClone(existente) : {
     id: novoId(), cliente: '', aniversariante: '', endereco: '', data: '', horario: '',
     itens: [{ nome: 'Animação', valor: '' }, { nome: 'Recreação', valor: '' }],
-    recebido: '', obs: ''
+    recebido: '', obs: '',
   };
   const $ = s => el.querySelector(s);
+
+  // Separa horário existente nos dois campos visuais
+  const { inicio: hInicio, fim: hFim } = parseHorario(p.horario);
 
   el.innerHTML = `
   <header class="barra"><a href="#/" class="voltar">‹ Voltar</a><h1>${existente ? 'Editar festa' : 'Nova festa'}</h1></header>
   <div class="form">
     <label>Nome do cliente<input name="cliente" autocomplete="off"></label>
     <label>Nome do aniversariante<input name="aniversariante" autocomplete="off"></label>
-    <div class="duas">
-      <label>Data da festa<input name="data" type="date"></label>
-      <label>Horário contratado<input name="horario" placeholder="14:00 às 17:00"></label>
+    <label>Data da festa<input name="data" type="date"></label>
+
+    <div class="duas" style="margin-top:14px">
+      <label style="margin-top:0">
+        <span style="display:block;font-size:.9rem;color:var(--mut);font-weight:600">Início</span>
+        <input name="hInicio" type="time" style="margin-top:4px">
+      </label>
+      <label style="margin-top:0">
+        <span style="display:block;font-size:.9rem;color:var(--mut);font-weight:600">Término</span>
+        <input name="hFim" type="time" style="margin-top:4px">
+      </label>
     </div>
+
     <label>Endereço da festa<input name="endereco" autocomplete="off"></label>
 
     <h2>Pacote da festa</h2>
@@ -35,11 +64,23 @@ export function renderForm(el, id) {
     ${existente ? '<button class="perigo" id="excluir" type="button">Excluir festa</button>' : ''}
   </div>`;
 
-  ['cliente', 'aniversariante', 'data', 'horario', 'endereco', 'recebido', 'obs'].forEach(k => {
+  // Preenche campos simples
+  ['cliente', 'aniversariante', 'data', 'endereco', 'recebido', 'obs'].forEach(k => {
     const campo = $(`[name=${k}]`);
     campo.value = p[k];
     campo.addEventListener('input', () => { p[k] = campo.value; totais(); });
   });
+
+  // Preenche e liga campos de horário
+  const campoInicio = $('[name="hInicio"]');
+  const campoFim    = $('[name="hFim"]');
+  campoInicio.value = hInicio;
+  campoFim.value    = hFim;
+  function atualizarHorario() {
+    p.horario = juntarHorario(campoInicio.value, campoFim.value);
+  }
+  campoInicio.addEventListener('change', atualizarHorario);
+  campoFim.addEventListener('change', atualizarHorario);
 
   function totais() {
     const s = status(p);
@@ -67,14 +108,22 @@ export function renderForm(el, id) {
 
   $('#salvar').onclick = () => {
     if (!p.data) { $('#erro').textContent = 'Informe a data da festa.'; return; }
+    atualizarHorario();
     p.recebido = Number(p.recebido) || 0;
-    p.itens = p.itens.filter(i => i.nome.trim() || Number(i.valor)).map(i => ({ nome: i.nome.trim(), valor: Number(i.valor) || 0 }));
+    p.itens = p.itens.filter(i => i.nome.trim() || Number(i.valor))
+                     .map(i => ({ nome: i.nome.trim(), valor: Number(i.valor) || 0 }));
     upsert(p);
     location.hash = '#/';
   };
-  if (existente) $('#excluir').onclick = () => {
-    if (confirm('Excluir esta festa? Não dá para desfazer.')) { remove(p.id); location.hash = '#/'; }
-  };
+
+  if (existente) {
+    $('#excluir').onclick = () => {
+      if (confirm('Excluir esta festa? O evento do Google Agenda também será removido.')) {
+        remove(p.id);
+        location.hash = '#/';
+      }
+    };
+  }
 
   itens(); totais();
 }
