@@ -1,5 +1,5 @@
 import { getAll, getPacotes } from '../store.js';
-import { total, aReceber, status, STATUS_TEXTO } from '../core/calc.js';
+import { total, recebido, aReceber, status, statusGrupo, STATUS_TEXTO } from '../core/calc.js';
 import { brl, esc, hoje, fmtData } from '../core/util.js';
 import { estadoSync } from '../sync/github.js';
 import { estadoAgenda } from '../sync/agenda.js';
@@ -21,6 +21,12 @@ export function renderHome(el) {
   const falta = todas.reduce((s, p) => s + aReceber(p), 0);
   const festasMes = todas.filter(p => p.data.startsWith(mesAtual));
   const feitoMes = festasMes.reduce((s, p) => s + total(p), 0);
+  const recebidoMes = festasMes.reduce((s, p) => s + recebido(p), 0);
+  const faltaMes = festasMes.reduce((s, p) => s + aReceber(p), 0);
+  const corMes = statusGrupo(feitoMes, recebidoMes, faltaMes);
+  const infoMes = faltaMes > 0
+    ? `Falta ${brl(faltaMes)} · Ver meses ›`
+    : feitoMes > 0 ? 'Tudo recebido · Ver meses ›' : 'Ver meses ›';
 
   let conteudoLista = '';
   if (aba === 'pacotes') {
@@ -42,10 +48,10 @@ export function renderHome(el) {
     </div>
     <div class="resumo">
       <div class="destaque"><span>Total a receber</span><strong>${brl(falta)}</strong></div>
-      <a href="#/mensal" aria-label="Ver faturamento por mês">
-        <span>Feito no mês</span>
+      <a href="#/mensal" class="${corMes}" aria-label="Ver faturamento por mês">
+        <span>Feito no mês (${festasMes.length})</span>
         <strong>${brl(feitoMes)}</strong>
-        <div class="sub">${festasMes.length} ${festasMes.length === 1 ? 'festa' : 'festas'} · Ver meses ›</div>
+        <div class="sub">${infoMes}</div>
       </a>
     </div>
     ${badgeSync()}

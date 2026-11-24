@@ -175,6 +175,12 @@ function montarEvento(festa, calendarId) {
       start: { date: festa.data },
       end:   { date: festa.data },
     }),
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'popup', minutes: 1440 }, // 1 dia antes (24 * 60 min)
+      ],
+    },
     extendedProperties: {
       private: { festaId: festa.id },   // idempotência: nunca duplica
     },
