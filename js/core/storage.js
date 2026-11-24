@@ -21,7 +21,12 @@ function migrarV1(listaAntiga, agora) {
 export function carregar() {
   try {
     const v2 = localStorage.getItem(CHAVE_V2);
-    if (v2) return JSON.parse(v2);
+    if (v2) {
+      const d = JSON.parse(v2);
+      // Garante que pacotes existe (dados criados antes desta versão)
+      if (!d.pacotes) d.pacotes = [];
+      return d;
+    }
 
     // Migração: formato antigo era uma lista simples em 'festas.v1'
     const v1 = localStorage.getItem(CHAVE_V1);
@@ -32,6 +37,7 @@ export function carregar() {
         versao: 1,
         config: { calendarId: null },
         festas: migrarV1(listaAntiga, agora),
+        pacotes: [],
       };
       salvar(dados);
       // Remove chave antiga para não migrar de novo
@@ -42,7 +48,7 @@ export function carregar() {
     // Dados corrompidos: começa do zero
   }
 
-  return { versao: 1, config: { calendarId: null }, festas: [] };
+  return { versao: 1, config: { calendarId: null }, festas: [], pacotes: [] };
 }
 
 /**

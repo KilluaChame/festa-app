@@ -21,6 +21,35 @@ export const setConfig = updates => {
 
 export const onChange = fn => ouvintes.push(fn);
 
+// ── Pacotes ──
+export const getPacotes = () => (dados.pacotes ?? []).filter(p => !p.excluida);
+export const getPacoteById = id => (dados.pacotes ?? []).find(p => p.id === id);
+
+export function upsertPacote(pacote) {
+  if (!dados.pacotes) dados.pacotes = [];
+  const pacoteCompleto = {
+    excluida: false,
+    ...pacote,
+    atualizadoEm: new Date().toISOString(),
+  };
+  const i = dados.pacotes.findIndex(p => p.id === pacoteCompleto.id);
+  if (i >= 0) dados.pacotes[i] = pacoteCompleto;
+  else dados.pacotes.push(pacoteCompleto);
+  confirmar('pacote', pacoteCompleto);
+}
+
+export function removePacote(id) {
+  if (!dados.pacotes) return;
+  const i = dados.pacotes.findIndex(p => p.id === id);
+  if (i < 0) return;
+  dados.pacotes[i] = {
+    ...dados.pacotes[i],
+    excluida: true,
+    atualizadoEm: new Date().toISOString(),
+  };
+  confirmar('pacote', dados.pacotes[i]);
+}
+
 function confirmar(evento, festa) {
   salvar(dados);
   ouvintes.forEach(fn => fn(evento, festa, dados));

@@ -1,19 +1,38 @@
-import { getAll } from '../store.js';
+import { getAll, getPacotes } from '../store.js';
 import { total, aReceber, status, STATUS_TEXTO } from '../core/calc.js';
 import { brl, esc, hoje, fmtData } from '../core/util.js';
 import { estadoSync } from '../sync/github.js';
 import { estadoAgenda } from '../sync/agenda.js';
+import { htmlListaPacotes } from './pacotes.js';
 
 let aba = 'proximas';
 
+export function setAba(novaAba) {
+  aba = novaAba;
+}
+
 export function renderHome(el) {
-  const todas = getAll(), h = hoje();
+  const todas = getAll(), pacotes = getPacotes(), h = hoje();
+  const mesAtual = h.slice(0, 7);
   const chave = p => p.data + (p.horario || '');
   const proximas = todas.filter(p => p.data >= h).sort((a, b) => chave(a).localeCompare(chave(b)));
   const passadas = todas.filter(p => p.data <  h).sort((a, b) => chave(b).localeCompare(chave(a)));
-  const lista = aba === 'proximas' ? proximas : passadas;
+
   const falta = todas.reduce((s, p) => s + aReceber(p), 0);
-  const noMes = todas.filter(p => p.data.startsWith(h.slice(0, 7))).length;
+  const festasMes = todas.filter(p => p.data.startsWith(mesAtual));
+  const feitoMes = festasMes.reduce((s, p) => s + total(p), 0);
+
+  let conteudoLista = '';
+  if (aba === 'pacotes') {
+    conteudoLista = htmlListaPacotes(pacotes);
+  } else {
+    const lista = aba === 'proximas' ? proximas : passadas;
+    conteudoLista = lista.length ? lista.map(card).join('') :
+      `<p class="vazio">${aba === 'proximas' ? 'Nenhuma festa marcada. Toque em + para cadastrar.' : 'Nenhuma festa passada.'}</p>`;
+  }
+
+  const fabHref = aba === 'pacotes' ? '#/pacote/novo' : '#/nova';
+  const fabLabel = aba === 'pacotes' ? 'Novo pacote' : 'Nova festa';
 
   el.innerHTML = `
   <header class="topo">
@@ -23,21 +42,31 @@ export function renderHome(el) {
     </div>
     <div class="resumo">
       <div class="destaque"><span>Total a receber</span><strong>${brl(falta)}</strong></div>
-      <div><span>Festas no mês</span><strong>${noMes}</strong></div>
+      <a href="#/mensal" aria-label="Ver faturamento por mês">
+        <span>Feito no mês</span>
+        <strong>${brl(feitoMes)}</strong>
+        <div class="sub">${festasMes.length} ${festasMes.length === 1 ? 'festa' : 'festas'} · Ver meses ›</div>
+      </a>
     </div>
     ${badgeSync()}
   </header>
   <nav class="abas">
     <button data-aba="proximas" class="${aba === 'proximas' ? 'on' : ''}">Próximas (${proximas.length})</button>
     <button data-aba="passadas" class="${aba === 'passadas' ? 'on' : ''}">Passadas (${passadas.length})</button>
+    <button data-aba="pacotes"  class="${aba === 'pacotes'  ? 'on' : ''}">Pacotes (${pacotes.length})</button>
   </nav>
   <section class="lista">
-    ${lista.length ? lista.map(card).join('') :
-      `<p class="vazio">${aba === 'proximas' ? 'Nenhuma festa marcada. Toque em + para cadastrar.' : 'Nenhuma festa passada.'}</p>`}
+    ${conteudoLista}
   </section>
-  <a class="fab" href="#/nova" aria-label="Nova festa">+</a>`;
+  <a class="fab" href="${fabHref}" aria-label="${fabLabel}">+</a>`;
 
-  el.querySelectorAll('[data-aba]').forEach(b => b.onclick = () => { aba = b.dataset.aba; renderHome(el); });
+  el.querySelectorAll('[data-aba]').forEach(b => b.onclick = () => {
+    aba = b.dataset.aba;
+    if (location.hash === '#/pacotes' && aba !== 'pacotes') {
+      history.replaceState(null, '', '#/');
+    }
+    renderHome(el);
+  });
 }
 
 /** Badges discretos de status (GitHub sync + Google Agenda). */

@@ -13,12 +13,13 @@ a{color:inherit;text-decoration:none}
 
 .topo{background:var(--pri);color:#fff;padding:20px 16px 18px;border-radius:0 0 24px 24px}
 .resumo{display:flex;gap:10px;margin-top:14px}
-.resumo>div{flex:1;background:rgba(255,255,255,.16);border-radius:14px;padding:10px 12px}
-.resumo .destaque{flex:1.6;background:#fff;color:#1f1b3a}
+.resumo>div,.resumo>a{flex:1;background:rgba(255,255,255,.16);border-radius:14px;padding:10px 12px;display:block}
+.resumo .destaque{flex:1.2;background:#fff;color:#1f1b3a}
 .resumo span{display:block;font-size:.8rem;opacity:.85}
-.resumo strong{font-size:1.35rem}
-.abas{display:flex;gap:8px;padding:16px 16px 4px}
-.abas button{flex:1;padding:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;font:inherit;font-weight:600}
+.resumo strong{font-size:1.25rem}
+.resumo .sub{font-size:.75rem;opacity:.85;margin-top:2px}
+.abas{display:flex;gap:6px;padding:16px 16px 4px}
+.abas button{flex:1;padding:10px 6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;font:inherit;font-size:.9rem;font-weight:600;white-space:nowrap}
 .abas button.on{background:var(--pri);border-color:var(--pri);color:#fff}
 .lista{padding:8px 16px;display:grid;gap:12px}
 .vazio{text-align:center;color:var(--mut);padding:40px 16px}
@@ -54,4 +55,7 @@ button.prim,button.sec,button.perigo{width:100%;margin-top:14px;padding:14px;bor
 .sec{background:transparent;border:1px dashed var(--pri)!important;color:var(--pri)}
 .perigo{background:var(--abbg);color:var(--ab)}
 .erro{color:var(--ab);font-weight:600;margin:10px 0 0;min-height:1em}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.chip{padding:8px 12px;border-radius:999px;border:1px solid var(--pri);background:var(--card);color:var(--pri);font:inherit;font-size:.85rem;font-weight:600;cursor:pointer}
+.chip.on{background:var(--pri);color:#fff}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

@@ -10,3 +10,24 @@ export function status(p) {
   return 'aberto';
 }
 export const STATUS_TEXTO = { pago: 'Pago', parcial: 'Parcial', aberto: 'Em aberto' };
+
+/**
+ * Agrupa festas por mês (YYYY-MM), ordenadas do mês mais recente para o mais antigo.
+ * Retorna [{ mes, quantidade, total, recebido, aReceber }].
+ */
+export function resumoMensal(festas) {
+  const mapa = new Map();
+  for (const p of festas) {
+    if (p.excluida || !p.data) continue;
+    const mes = p.data.slice(0, 7);
+    if (!mapa.has(mes)) {
+      mapa.set(mes, { mes, quantidade: 0, total: 0, recebido: 0, aReceber: 0 });
+    }
+    const item = mapa.get(mes);
+    item.quantidade += 1;
+    item.total += total(p);
+    item.recebido += recebido(p);
+    item.aReceber += aReceber(p);
+  }
+  return Array.from(mapa.values()).sort((a, b) => b.mes.localeCompare(a.mes));
+}
