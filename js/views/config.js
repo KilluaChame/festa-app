@@ -1,6 +1,7 @@
 // Tela de configuração — rota #/config
 // Salva token GitHub e Client ID do Google APENAS no localStorage do aparelho.
 // Nunca grava segredos em arquivo ou URL.
+import { esc } from '../core/util.js';
 import { getConfig, setConfig } from '../store.js';
 import { sincronizar } from '../sync/github.js';
 import { conectarGoogle, estadoAgenda } from '../sync/agenda.js';
@@ -22,7 +23,7 @@ export function renderConfig(el) {
     </p>
 
     <label>Dono do repositório (seu usuário GitHub)
-      <input id="cfgDono" autocomplete="off" placeholder="ex: KilluaChame">
+      <input id="cfgDono" autocomplete="off" placeholder="ex: seu-usuario">
     </label>
     <label>Nome do repositório privado
       <input id="cfgRepo" autocomplete="off" placeholder="festas-dados">
@@ -40,7 +41,7 @@ export function renderConfig(el) {
     ${cfg.githubDono ? `
     <div style="margin-top:16px;padding:12px;border-radius:12px;background:var(--card);font-size:.9rem">
       <b>GitHub atual:</b><br>
-      Repositório: <code>${cfg.githubDono}/${cfg.githubRepo ?? 'festas-dados'}</code><br>
+      Repositório: <code>${esc(cfg.githubDono)}/${esc(cfg.githubRepo ?? 'festas-dados')}</code><br>
       Token: <span style="color:var(--ok)">✓ salvo neste aparelho</span>
     </div>` : ''}
 
