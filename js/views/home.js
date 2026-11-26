@@ -41,8 +41,8 @@ export function renderHome(el) {
   }
 
   const FAB = {
-    pacotes:   { href: '#/pacote/novo', label: 'Novo pacote' },
-    materiais: { href: '#/bolsa/nova',  label: 'Nova bolsa' },
+    pacotes:   { href: '#/pacote/novo',   label: 'Novo pacote' },
+    materiais: { href: '#/material/novo', label: 'Novo conjunto' },
   };
   const fab = FAB[aba] ?? { href: '#/nova', label: 'Nova festa' };
 

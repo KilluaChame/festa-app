@@ -5,7 +5,7 @@ import { renderForm } from './views/form.js';
 import { renderConfig } from './views/config.js';
 import { renderPacoteForm } from './views/pacotes.js';
 import { renderMensal } from './views/mensal.js';
-import { renderBolsaForm } from './views/materiais.js';
+import { renderNovoConjunto, renderContainer } from './views/materiais.js';
 import { onChange } from './store.js';
 import { sincronizar, agendarSync, onEstadoSync } from './sync/github.js';
 import { reagirMudanca, onEstadoAgenda } from './sync/agenda.js';
@@ -21,8 +21,8 @@ function rota() {
   else if (h === '#/pacote/novo')       renderPacoteForm(raiz, null);
   else if (h.startsWith('#/pacote/'))   renderPacoteForm(raiz, h.slice(9));
   else if (h === '#/materiais')         { setAba('materiais'); renderHome(raiz); }
-  else if (h === '#/bolsa/nova')        renderBolsaForm(raiz, null);
-  else if (h.startsWith('#/bolsa/'))    renderBolsaForm(raiz, h.slice(8));
+  else if (h === '#/material/novo')     renderNovoConjunto(raiz);
+  else if (h.startsWith('#/material/')) renderContainer(raiz, h.slice(11).split('/').filter(Boolean));
   else if (h.startsWith('#/festa/'))    renderForm(raiz, h.slice(8));
   else                                  renderHome(raiz);
   window.scrollTo(0, 0);

@@ -1,5 +1,5 @@
 // Mude VERSAO ao publicar atualizações para limpar o cache antigo.
-const VERSAO = 'festas-v12';
+const VERSAO = 'festas-v13';
 const ARQUIVOS = ['./', 'index.html', 'css/style.css', 'js/app.js', 'js/store.js',
   'js/core/calc.js', 'js/core/util.js', 'js/core/storage.js',
   'js/core/merge.js', 'js/views/home.js', 'js/views/form.js',

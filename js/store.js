@@ -38,10 +38,16 @@ export function upsertBolsa(bolsa) {
   confirmar('bolsa', bolsaCompleta);
 }
 
-/** Insere várias bolsas de uma vez (ex.: listas iniciais) com apenas um save/sync. */
-export function upsertBolsasLote(lista) {
+/** Insere várias bolsas de uma vez (e opcionalmente exclui IDs antigos) com um único save/sync. */
+export function upsertBolsasLote(lista, idsExcluir = []) {
   if (!dados.bolsas) dados.bolsas = [];
   const agora = new Date().toISOString();
+  const remover = new Set(idsExcluir);
+  for (let i = 0; i < dados.bolsas.length; i++) {
+    if (remover.has(dados.bolsas[i].id)) {
+      dados.bolsas[i] = { ...dados.bolsas[i], excluida: true, atualizadoEm: agora };
+    }
+  }
   for (const bolsa of lista) {
     const completa = { excluida: false, ...bolsa, atualizadoEm: agora };
     const i = dados.bolsas.findIndex(b => b.id === completa.id);
