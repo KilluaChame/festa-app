@@ -23,8 +23,9 @@ export function carregar() {
     const v2 = localStorage.getItem(CHAVE_V2);
     if (v2) {
       const d = JSON.parse(v2);
-      // Garante que pacotes existe (dados criados antes desta versão)
+      // Garante que pacotes e bolsas existem (dados criados antes desta versão)
       if (!d.pacotes) d.pacotes = [];
+      if (!d.bolsas)  d.bolsas  = [];
       return d;
     }
 
@@ -48,7 +49,7 @@ export function carregar() {
     // Dados corrompidos: começa do zero
   }
 
-  return { versao: 1, config: { calendarId: null }, festas: [], pacotes: [] };
+  return { versao: 1, config: { calendarId: null }, festas: [], pacotes: [], bolsas: [] };
 }
 
 /**

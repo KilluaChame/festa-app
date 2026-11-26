@@ -1,9 +1,10 @@
-import { getAll, getPacotes } from '../store.js';
+import { getAll, getPacotes, getBolsas } from '../store.js';
 import { total, recebido, aReceber, status, statusGrupo, STATUS_TEXTO } from '../core/calc.js';
 import { brl, esc, hoje, fmtData } from '../core/util.js';
 import { estadoSync } from '../sync/github.js';
 import { estadoAgenda } from '../sync/agenda.js';
 import { htmlListaPacotes } from './pacotes.js';
+import { htmlListaMateriais, bindEventosMateriais } from './materiais.js';
 
 let aba = 'proximas';
 
@@ -12,7 +13,7 @@ export function setAba(novaAba) {
 }
 
 export function renderHome(el) {
-  const todas = getAll(), pacotes = getPacotes(), h = hoje();
+  const todas = getAll(), pacotes = getPacotes(), bolsas = getBolsas(), h = hoje();
   const mesAtual = h.slice(0, 7);
   const chave = p => p.data + (p.horario || '');
   const proximas = todas.filter(p => p.data >= h).sort((a, b) => chave(a).localeCompare(chave(b)));
@@ -31,14 +32,19 @@ export function renderHome(el) {
   let conteudoLista = '';
   if (aba === 'pacotes') {
     conteudoLista = htmlListaPacotes(pacotes);
+  } else if (aba === 'materiais') {
+    conteudoLista = htmlListaMateriais(bolsas);
   } else {
     const lista = aba === 'proximas' ? proximas : passadas;
     conteudoLista = lista.length ? lista.map(card).join('') :
       `<p class="vazio">${aba === 'proximas' ? 'Nenhuma festa marcada. Toque em + para cadastrar.' : 'Nenhuma festa passada.'}</p>`;
   }
 
-  const fabHref = aba === 'pacotes' ? '#/pacote/novo' : '#/nova';
-  const fabLabel = aba === 'pacotes' ? 'Novo pacote' : 'Nova festa';
+  const FAB = {
+    pacotes:   { href: '#/pacote/novo', label: 'Novo pacote' },
+    materiais: { href: '#/bolsa/nova',  label: 'Nova bolsa' },
+  };
+  const fab = FAB[aba] ?? { href: '#/nova', label: 'Nova festa' };
 
   el.innerHTML = `
   <header class="topo">
@@ -57,22 +63,27 @@ export function renderHome(el) {
     ${badgeSync()}
   </header>
   <nav class="abas">
-    <button data-aba="proximas" class="${aba === 'proximas' ? 'on' : ''}">Próximas (${proximas.length})</button>
-    <button data-aba="passadas" class="${aba === 'passadas' ? 'on' : ''}">Passadas (${passadas.length})</button>
-    <button data-aba="pacotes"  class="${aba === 'pacotes'  ? 'on' : ''}">Pacotes (${pacotes.length})</button>
+    <button data-aba="proximas"  class="${aba === 'proximas'  ? 'on' : ''}">Próximas (${proximas.length})</button>
+    <button data-aba="passadas"  class="${aba === 'passadas'  ? 'on' : ''}">Passadas (${passadas.length})</button>
+    <button data-aba="pacotes"   class="${aba === 'pacotes'   ? 'on' : ''}">Pacotes (${pacotes.length})</button>
+    <button data-aba="materiais" class="${aba === 'materiais' ? 'on' : ''}">Materiais (${bolsas.length})</button>
   </nav>
   <section class="lista">
     ${conteudoLista}
   </section>
-  <a class="fab" href="${fabHref}" aria-label="${fabLabel}">+</a>`;
+  <a class="fab" href="${fab.href}" aria-label="${fab.label}">+</a>`;
 
   el.querySelectorAll('[data-aba]').forEach(b => b.onclick = () => {
     aba = b.dataset.aba;
-    if (location.hash === '#/pacotes' && aba !== 'pacotes') {
+    if (location.hash === '#/pacotes' || location.hash === '#/materiais') {
       history.replaceState(null, '', '#/');
     }
     renderHome(el);
   });
+
+  if (aba === 'materiais') {
+    bindEventosMateriais(el, () => renderHome(el));
+  }
 }
 
 /** Badges discretos de status (GitHub sync + Google Agenda). */

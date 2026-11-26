@@ -123,18 +123,21 @@ export async function sincronizar() {
       const remoto = await baixar(token, dono, repo);
       const listaRemota = remoto?.dadosRemoto?.festas ?? [];
       const pacotesRemotos = remoto?.dadosRemoto?.pacotes ?? [];
+      const bolsasRemotas = remoto?.dadosRemoto?.bolsas ?? [];
       const sha = remoto?.sha ?? null;
 
       // 2. Mescla
       const local = getDados();
       const listaUnida = mesclar(local.festas, listaRemota);
       const pacotesUnidos = mesclar(local.pacotes ?? [], pacotesRemotos);
+      const bolsasUnidas = mesclar(local.bolsas ?? [], bolsasRemotas);
 
       // 3. Dados unificados
       const dadosUnidos = {
         ...local,
         festas: listaUnida,
         pacotes: pacotesUnidos,
+        bolsas: bolsasUnidas,
         config: {
           ...local.config,
           // Preserva calendarId do remoto se o local não tem

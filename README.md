@@ -9,11 +9,17 @@ Aplicativo web pessoal (PWA) para organizar **agenda e financeiro de serviços d
 - **Cadastro e edição de festas:** cliente, aniversariante, data, horário de início/término, endereço, itens do pacote, valor já recebido e observações.
 - **Controle financeiro automático:** calcula em tempo real o total, o valor a receber e a situação (*Pago*, *Parcial* ou *Em aberto*).
 - **Pacotes pré-prontos:** aba dedicada (**Pacotes**) para criar pacotes reutilizáveis e aplicá-los com 1 toque ao cadastrar uma festa (podendo ainda editar ou adicionar itens extras).
+- **Gerenciamento de materiais:** aba dedicada (**Materiais**) para organizar bolsas por categoria (*Animação*, *Recreação*, *Outro*) e **número** (`#1`, `#2`, ...), com status por **cor** na bolsa e ao lado de cada material:
+  - 🟢 **Verde:** tenho.
+  - 🟡 **Amarelo:** precisa de reparo ou observação.
+  - 🔴 **Vermelho:** não tenho o material.
+  - 🔵 **Azul:** peguei emprestado com alguém *(com nome da pessoa obrigatório)*.
+  Inclui busca ao vivo, filtros por cor/pendência e opção de carregar listas modelo iniciais.
 - **Resumo mensal com cores:** contador **Feito no mês** na tela inicial e tela **Faturamento por mês** (`#/mensal`):
   - 🟢 **Verde:** todas as festas do mês já foram recebidas.
   - 🟡 **Amarelo:** parte recebida, ainda falta receber de alguma festa do mês.
   - 🔴 **Vermelho:** nada recebido no mês ainda.
-- **Sincronização entre aparelhos (opcional):** salva suas festas e pacotes em um repositório **privado** separado no GitHub, com mesclagem automática por última edição.
+- **Sincronização entre aparelhos (opcional):** salva suas festas, pacotes e bolsas de materiais em um repositório **privado** separado no GitHub, com mesclagem automática por última edição.
 - **Integração com Google Agenda (opcional):** cria uma agenda própria chamada **"Festas"** (sem misturar com sua agenda pessoal), cria/atualiza/remove eventos automaticamente ao salvar ou excluir festas — com pacote, valores (total, recebido e a receber) e lembrete de **1 dia antes**.
 - **Tema claro e escuro automático** conforme o sistema.
 
@@ -112,9 +118,10 @@ node js/core/merge.test.js
     │   ├── github.js      # Sincronização via GitHub REST API (Contents)
     │   └── agenda.js      # Integração com Google Calendar API v3
     └── views/
-        ├── home.js        # Tela inicial (resumo, abas Próximas/Passadas/Pacotes)
+        ├── home.js        # Tela inicial (resumo, abas Próximas/Passadas/Pacotes/Materiais)
         ├── form.js        # Cadastro/edição de festas e seletor de pacotes
         ├── pacotes.js     # Gerenciamento de pacotes pré-prontos
+        ├── materiais.js   # Gerenciamento de bolsas e materiais por cor
         ├── mensal.js      # Faturamento detalhado por mês
         └── config.js      # Configurações do GitHub e Google Agenda
 ```

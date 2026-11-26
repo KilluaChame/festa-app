@@ -21,6 +21,48 @@ export const setConfig = updates => {
 
 export const onChange = fn => ouvintes.push(fn);
 
+// ── Bolsas de materiais ──
+export const getBolsas = () => (dados.bolsas ?? []).filter(b => !b.excluida);
+export const getBolsaById = id => (dados.bolsas ?? []).find(b => b.id === id);
+
+export function upsertBolsa(bolsa) {
+  if (!dados.bolsas) dados.bolsas = [];
+  const bolsaCompleta = {
+    excluida: false,
+    ...bolsa,
+    atualizadoEm: new Date().toISOString(),
+  };
+  const i = dados.bolsas.findIndex(b => b.id === bolsaCompleta.id);
+  if (i >= 0) dados.bolsas[i] = bolsaCompleta;
+  else dados.bolsas.push(bolsaCompleta);
+  confirmar('bolsa', bolsaCompleta);
+}
+
+/** Insere várias bolsas de uma vez (ex.: listas iniciais) com apenas um save/sync. */
+export function upsertBolsasLote(lista) {
+  if (!dados.bolsas) dados.bolsas = [];
+  const agora = new Date().toISOString();
+  for (const bolsa of lista) {
+    const completa = { excluida: false, ...bolsa, atualizadoEm: agora };
+    const i = dados.bolsas.findIndex(b => b.id === completa.id);
+    if (i >= 0) dados.bolsas[i] = completa;
+    else dados.bolsas.push(completa);
+  }
+  confirmar('bolsa', null);
+}
+
+export function removeBolsa(id) {
+  if (!dados.bolsas) return;
+  const i = dados.bolsas.findIndex(b => b.id === id);
+  if (i < 0) return;
+  dados.bolsas[i] = {
+    ...dados.bolsas[i],
+    excluida: true,
+    atualizadoEm: new Date().toISOString(),
+  };
+  confirmar('bolsa', dados.bolsas[i]);
+}
+
 // ── Pacotes ──
 export const getPacotes = () => (dados.pacotes ?? []).filter(p => !p.excluida);
 export const getPacoteById = id => (dados.pacotes ?? []).find(p => p.id === id);
@@ -109,6 +151,8 @@ export function substituirDados(novosDados) {
   const calendarId = dados.config?.calendarId ?? novosDados.config?.calendarId ?? null;
   const googleClientId = dados.config?.googleClientId ?? novosDados.config?.googleClientId ?? null;
   dados = novosDados;
+  if (!dados.pacotes) dados.pacotes = [];
+  if (!dados.bolsas)  dados.bolsas  = [];
   if (calendarId)     dados.config.calendarId     = calendarId;
   if (googleClientId) dados.config.googleClientId = googleClientId;
   salvar(dados);

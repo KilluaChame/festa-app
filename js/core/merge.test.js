@@ -104,6 +104,24 @@ console.log('\n8. Festas diferentes em cada aparelho:');
   assert('tamanho é 2', result.length === 2);
 }
 
+// 9. Bolsas de materiais com materiais internos — versão mais recente vence
+console.log('\n9. Bolsas de materiais:');
+{
+  const local = [{
+    id: 'b1', tipo: 'Animação', numero: 1, nome: 'Bolsa preta', cor: 'amarelo', obs: 'Zíper',
+    materiais: [{ id: 'm1', nome: '1 Tripé', cor: 'azul', obs: 'João' }],
+    atualizadoEm: TS_NOVO, excluida: false,
+  }];
+  const remota = [{
+    id: 'b1', tipo: 'Animação', numero: 1, nome: 'Bolsa preta', cor: 'verde', obs: '',
+    materiais: [{ id: 'm1', nome: '1 Tripé', cor: 'verde', obs: '' }],
+    atualizadoEm: TS_VELHO, excluida: false,
+  }];
+  const result = mesclar(local, remota);
+  assert('bolsa local mais recente vence', porId(result, 'b1').cor === 'amarelo');
+  assert('material emprestado preservado', porId(result, 'b1').materiais[0].obs === 'João');
+}
+
 // --- Sumário ---
 console.log(`\n=== Resultado: ${passou} passaram, ${falhou} falharam ===\n`);
 if (falhou > 0) process.exit(1);
